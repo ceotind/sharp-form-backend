@@ -36,14 +36,31 @@ const saveFormResponse = async (req, res) => {
             });
         }
 
-        // Create the response document
+    // Create the response document
         const responseData = {
             answers,
             timestamp: Date.now(),
             formId,
             respondentId: req.user?.uid || null, // Store user ID if authenticated
-            respondentEmail: req.user?.email || null // Store email if authenticated
+            respondentEmail: req.user?.email || null, // Store email if authenticated
+            files: [] // Array to store file references
         };
+
+        // Process file uploads if they exist in the answers
+        const fileAnswers = Object.entries(answers).filter(([id, value]) => {
+            const element = formData.elements.find(el => el.id === id);
+            return element && element.type === 'file' && value && value.fileUrl;
+        });
+
+        // Add file metadata to the response
+        if (fileAnswers.length > 0) {
+            responseData.files = fileAnswers.map(([questionId, value]) => ({
+                questionId,
+                fileUrl: value.fileUrl,
+                fileName: value.fileName,
+                contentType: value.contentType
+            }));
+        }
 
         // Save the response in a subcollection
         const responseRef = await formRef.collection('responses').add(responseData);

@@ -46,11 +46,17 @@ const createForm = async (req, res) => {
     // Basic validation
     if (!name || !Array.isArray(elements)) {
       return res.status(400).json({ error: 'Form name and elements array are required.' });
-    }
-
-    // Validate elements (basic example, can be more thorough)
+    }    // Validate elements (basic example, can be more thorough)
     if (elements.some(el => !el.type || !el.label)) {
         return res.status(400).json({ error: 'Each form element must have a type and a label.' });
+    }
+
+    // Validate file upload elements
+    const fileElements = elements.filter(el => el.type === 'file');
+    if (fileElements.length > 0) {
+        if (fileElements.some(el => !el.acceptedTypes)) {
+            return res.status(400).json({ error: 'File upload elements must specify acceptedTypes.' });
+        }
     }
 
     const newFormData = {

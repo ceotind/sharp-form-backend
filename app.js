@@ -15,6 +15,8 @@ const app = express();
 const authRoutes = require('./routes/auth'); // Adjust path as necessary
 const formRoutes = require('./routes/forms');
 const responseRoutes = require('./routes/responses');
+const fileRoutes = require('./routes/files');
+const testRoutes = require('./routes/test'); // For testing without authentication
 
 // --- Middleware Setup ---
 
@@ -31,6 +33,16 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 // Mount authentication routes under the /api/auth prefix
 app.use('/api/auth', authRoutes);
+
+// Mount main routes
+app.use('/api/forms', formRoutes);
+app.use('/api/responses', responseRoutes);
+app.use('/api/files', fileRoutes);
+
+// Mount test routes (only in development)
+if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') {
+    app.use('/api/test/files', testRoutes);
+}
 
 // Debug route to list all registered routes
 app.get('/debug/routes', (req, res) => {
@@ -65,6 +77,9 @@ app.use('/api/forms', formRoutes);
 
 // Mount response routes under the /api/responses prefix
 app.use('/api/responses', responseRoutes);
+
+// Mount file routes under the /api/files prefix
+app.use('/api/files', fileRoutes);
 
 // 404 handler
 app.use((req, res, next) => {
