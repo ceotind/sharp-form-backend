@@ -1,7 +1,13 @@
 const http = require('http');
+require('dotenv').config();
 
-// Form ID from the form we just created
-const formId = 'xo7Y7B8flj4CR7WL77vf';
+// Form ID from environment variables
+const formId = process.env.TEST_FORM_ID;
+
+if (!formId) {
+  console.error('Please set TEST_FORM_ID in your .env file');
+  process.exit(1);
+}
 
 const data = JSON.stringify({
   answers: {
