@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Firebase Auth Test Client</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background-color: #f4f4f4; color: #333; }
+        .container { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); max-width: 500px; margin: 20px auto; }
+        h2, h3 { color: #333; }
+        input[type="email"], input[type="password"], button {
+            width: calc(100% - 22px); padding: 10px; margin-bottom: 10px; border-radius: 4px; border: 1px solid #ddd;
+        }
+        button { background-color: #007bff; color: white; cursor: pointer; font-weight: bold; }
+        button:hover { background-color: #0056b3; }
+        textarea { width: calc(100% - 22px); min-height: 100px; margin-top:10px; border-radius: 4px; border: 1px solid #ddd; font-family: monospace; }
+        pre { background-color: #eee; padding: 10px; border-radius: 4px; white-space: pre-wrap; word-wrap: break-word; font-size: 0.9em; }
+        .info { background-color: #e7f3fe; border-left: 6px solid #2196F3; padding:10px; margin-bottom:15px;}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Firebase Auth Test Client</h2>
+
+        <div class="info">
+            <p><strong>VERY IMPORTANT:</strong> You MUST replace the placeholder Firebase config values below with your actual project's Firebase configuration!</p>
+            <p>Find this in: Firebase Console -> Project Settings (gear icon) -> General tab -> Scroll down to "Your apps" -> Select your Web app -> SDK setup and configuration -> Choose "Config".</p>
+        </div>
+        <pre id="firebaseConfigInfo">
+        </pre>
+
+        <h3>Email/Password Sign-Up & Sign-In</h3>
+        <input type="email" id="email" placeholder="Email" /><br />
+        <input type="password" id="password" placeholder="Password" /><br />
+        <button onclick="signUpEmailClient()">Sign Up (on this page)</button>
+        <button onclick="signInEmailClient()">Sign In (on this page)</button>
+
+        <h3>Google Sign-In</h3>
+        <button onclick="signInGoogleClient()">Sign In with Google</button>
+
+        <h3>Your Firebase ID Token:</h3>
+        <textarea id="idTokenArea" readonly placeholder="Firebase ID Token will appear here after successful sign-in..."></textarea>
+        <button onclick="copyToken()">Copy Token</button>
+
+        <script>
+            // --- START: PASTE YOUR FIREBASE CONFIG OBJECT DIRECTLY HERE ---
+            const firebaseConfig = {
+            apiKey: "AIzaSyCGciiVTp1vgDwabT2mD2u_Zd2e9YP2syc",
+            authDomain: "sharpform-69b09.firebaseapp.com",
+            projectId: "sharpform-69b09",
+            storageBucket: "sharpform-69b09.firebasestorage.app",
+            messagingSenderId: "43933730955",
+            appId: "1:43933730955:web:0efb2294c1644db0d56c8e",
+            measurementId: "G-J3JVHFS8V1"
+            };
+            // --- END: PASTE YOUR FIREBASE CONFIG OBJECT DIRECTLY HERE ---
+
+            // Initialize Firebase
+            firebase.initializeApp(firebaseConfig);
+            const auth = firebase.auth();
+
+            async function signUpEmailClient() {
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                try {
+                    const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                    alert('Client-side Sign Up SUCCESS: ' + userCredential.user.email);
+                    updateIdTokenArea();
+                } catch (error) {
+                    alert('Client-side Sign Up ERROR: ' + error.message);
+                }
+            }
+
+            async function signInEmailClient() {
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                try {
+                    const userCredential = await auth.signInWithEmailAndPassword(email, password);
+                    alert('Client-side Sign In SUCCESS: ' + userCredential.user.email);
+                    updateIdTokenArea();
+                } catch (error) {
+                    alert('Client-side Sign In ERROR: ' + error.message);
+                }
+            }
+
+            async function signInGoogleClient() {
+                const provider = new firebase.auth.GoogleAuthProvider();
+                try {
+                    const result = await auth.signInWithPopup(provider);
+                    alert('Client-side Google Sign In SUCCESS: ' + result.user.displayName);
+                    updateIdTokenArea();
+                } catch (error) {
+                    alert('Client-side Google Sign In ERROR: ' + error.message);
+                    console.error("Google Sign In Error details:", error);
+                }
+            }
+
+            async function updateIdTokenArea() {
+                const user = auth.currentUser;
+                if (user) {
+                    try {
+                        const token = await user.getIdToken(true); // true forces a refresh
+                        document.getElementById('idTokenArea').value = token;
+                        console.log("ID Token:", token);
+                    } catch (error) {
+                        alert('Error getting ID token: ' + error.message);
+                        document.getElementById('idTokenArea').value = 'Error getting token.';
+                    }
+                } else {
+                    document.getElementById('idTokenArea').value = 'No user signed in.';
+                }
+            }
+            function copyToken(){
+                const tokenArea = document.getElementById('idTokenArea');
+                tokenArea.select();
+                document.execCommand('copy');
+                alert('Token copied to clipboard!');
+            }
+
+            // Listen for auth state changes
+            auth.onAuthStateChanged(user => {
+                if (user) {
+                    console.log("Auth state changed: User is signed in:", user.email);
+                    updateIdTokenArea();
+                } else {
+                    console.log("Auth state changed: User is signed out.");
+                    document.getElementById('idTokenArea').value = '';
+                }
+            });
+        </script>
+    </div>
+</body>
+</html>
