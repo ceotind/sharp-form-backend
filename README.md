@@ -2,6 +2,29 @@
 
 A robust and secure backend service for managing dynamic forms and responses, built with Express.js and Firebase. This service provides a complete solution for creating, managing, and collecting responses to forms with file upload capabilities.
 
+## 📚 API Quick Reference
+
+### Authentication
+- Register: `POST /api/auth/register` - Create new account with email/password
+- Login: `POST /api/auth/login` - Login with Firebase ID token
+- Google Sign-in: `POST /api/auth/google` - Sign in with Google
+
+### Forms
+- Create Form: `POST /api/forms` - Create a new form
+- List Forms: `GET /api/forms` - Get all your forms
+- Get Form: `GET /api/forms/:formId` - Get a specific form
+- Update Form: `PUT /api/forms/:formId` - Update a form
+- Delete Form: `DELETE /api/forms/:formId` - Delete a form
+
+### Form Responses
+- Submit Response: `POST /api/forms/:formId/responses` - Submit an answer to a form
+- Get Responses: `GET /api/forms/:formId/responses` - Get all responses for a form
+
+### File Management
+- Upload File: `POST /api/files/upload` - Upload a file (max 5MB)
+- List Files: `GET /api/files` - List your uploaded files
+- Delete File: `DELETE /api/files/:fileName` - Delete a file
+
 ## 🚀 Features
 
 - 🔐 Secure Authentication (Email/Password and Google Sign-in)
@@ -67,169 +90,231 @@ npm start
 npm test
 ```
 
-## 🔌 API Endpoints
+## 🔌 Detailed API Guide
 
 ### Authentication
 
-#### Register User
-- **POST** `/api/auth/register`
-- **Body**: `{ "email": "string", "password": "string", "displayName": "string" }`
-- **Response**: `201 Created`
-```json
-{
-  "message": "User registered successfully.",
-  "uid": "string",
-  "email": "string"
-}
-```
+#### Creating a New Account
+```http
+POST /api/auth/register
+Content-Type: application/json
 
-#### Login
-- **POST** `/api/auth/login`
-- **Body**: `{ "idToken": "string" }`
-- **Response**: `200 OK`
-```json
 {
-  "message": "User logged in successfully.",
-  "user": {
-    "uid": "string",
-    "email": "string",
-    "name": "string",
-    "picture": "string"
-  }
+    "email": "user@example.com",
+    "password": "securepassword123",
+    "displayName": "John Doe"
 }
 ```
+- Creates a new user account
+- All fields are required
+- Password must be at least 8 characters
+- Returns user ID and email on success
+
+#### Logging In
+```http
+POST /api/auth/login
+Content-Type: application/json
+
+{
+    "idToken": "firebase-id-token"
+}
+```
+- Use your Firebase ID token to log in
+- Token is obtained after Firebase email/password authentication
+- Returns user profile and session token
 
 #### Google Sign-In
-- **POST** `/api/auth/google`
-- **Body**: `{ "idToken": "string" }`
-- **Response**: `200 OK`
-```json
+```http
+POST /api/auth/google
+Content-Type: application/json
+
 {
-  "message": "Google Sign-In successful.",
-  "user": {
-    "uid": "string",
-    "email": "string",
-    "displayName": "string",
-    "photoURL": "string"
-  }
+    "idToken": "google-oauth-token"
 }
 ```
+- Sign in with your Google account
+- Get the ID token from Google OAuth flow
+- Returns user profile with Google information
 
-### Forms
+### Managing Forms
 
-#### Create Form
-- **POST** `/api/forms`
-- **Auth**: Required
-- **Body**: 
-```json
+#### Creating a New Form
+```http
+POST /api/forms
+Authorization: Bearer your-auth-token
+Content-Type: application/json
+
 {
-  "name": "string",
-  "description": "string",
-  "elements": [
-    {
-      "type": "string",
-      "label": "string",
-      "required": boolean,
-      "acceptedTypes": ["string"] // Required for file type
+    "name": "Customer Feedback",
+    "description": "Please share your experience with our service",
+    "elements": [
+        {
+            "type": "text",
+            "label": "Full Name",
+            "required": true
+        },
+        {
+            "type": "email",
+            "label": "Email Address",
+            "required": true
+        },
+        {
+            "type": "file",
+            "label": "Upload Receipt",
+            "required": false,
+            "acceptedTypes": ["image/jpeg", "image/png", "application/pdf"]
+        }
+    ],
+    "isPublished": true
+}
+```
+- Requires authentication
+- `name` and `description` describe your form
+- `elements` define form fields:
+  - `text`: Text input
+  - `email`: Email input
+  - `number`: Numeric input
+  - `file`: File upload
+  - Add `required: true` for mandatory fields
+- Set `isPublished: true` to make the form active
+
+#### Getting Your Forms
+```http
+GET /api/forms
+Authorization: Bearer your-auth-token
+```
+- Lists all forms you've created
+- Shows form details, elements, and publish status
+- Includes creation and last update timestamps
+
+#### Viewing a Specific Form
+```http
+GET /api/forms/form123
+Authorization: Bearer your-auth-token  # Required for private forms
+```
+- Get detailed information about one form
+- Public forms don't require authentication
+- Returns form structure and elements
+
+#### Updating a Form
+```http
+PUT /api/forms/form123
+Authorization: Bearer your-auth-token
+Content-Type: application/json
+
+{
+    "name": "Updated Form Name",
+    "description": "Updated description",
+    "elements": [...],
+    "isPublished": true
+}
+```
+- Update any form properties
+- Use same structure as form creation
+- Only form owner can update
+
+#### Deleting a Form
+```http
+DELETE /api/forms/form123
+Authorization: Bearer your-auth-token
+```
+- Permanently removes the form
+- Also deletes associated responses
+- Only form owner can delete
+
+### Working with Form Responses
+
+#### Submitting a Response
+```http
+POST /api/forms/form123/responses
+Content-Type: application/json
+
+{
+    "answers": {
+        "fullName": "John Smith",
+        "emailAddress": "john@example.com",
+        "uploadedReceipt": {
+            "fileUrl": "https://storage.example.com/files/receipt.pdf",
+            "fileName": "receipt.pdf",
+            "contentType": "application/pdf"
+        }
     }
-  ],
-  "isPublished": boolean
 }
 ```
-- **Response**: `201 Created`
+- Submit answers to a form
+- Match answer keys to form element labels
+- For file uploads, include file details after uploading
+- No authentication required for public forms
 
-#### List Forms
-- **GET** `/api/forms`
-- **Auth**: Required
-- **Response**: `200 OK`
-```json
-[
-  {
-    "id": "string",
-    "name": "string",
-    "description": "string",
-    "elements": [],
-    "isPublished": boolean,
-    "createdAt": "timestamp",
-    "updatedAt": "timestamp"
-  }
-]
+#### Getting Form Responses
+```http
+GET /api/forms/form123/responses
+Authorization: Bearer your-auth-token
 ```
+- Get all responses for your form
+- Only form owner can access responses
+- Returns array of all submissions
 
-#### Get Form
-- **GET** `/api/forms/:formId`
-- **Auth**: Required for private forms
-- **Response**: `200 OK`
+### Managing Files
 
-#### Update Form
-- **PUT** `/api/forms/:formId`
-- **Auth**: Required
-- **Body**: Same as Create Form
-- **Response**: `200 OK`
+#### Uploading Files
+```http
+POST /api/files/upload
+Authorization: Bearer your-auth-token
+Content-Type: multipart/form-data
 
-#### Delete Form
-- **DELETE** `/api/forms/:formId`
-- **Auth**: Required
-- **Response**: `200 OK`
-
-### Responses
-
-#### Submit Response
-- **POST** `/api/forms/:formId/responses`
-- **Body**: 
-```json
-{
-  "answers": {
-    "questionId": "answer",
-    "fileQuestionId": {
-      "fileUrl": "string",
-      "fileName": "string",
-      "contentType": "string"
-    }
-  }
-}
+file=@path/to/local/file.jpg
 ```
-- **Response**: `201 Created`
+- Upload files up to 5MB
+- Supported formats:
+  - Images: jpg, jpeg, png, webp
+  - Documents: pdf, doc, docx
+  - Spreadsheets: xls, xlsx
+  - Text: txt
+- Returns file URL and details for form submission
 
-#### Get Responses
-- **GET** `/api/forms/:formId/responses`
-- **Auth**: Required (form owner only)
-- **Response**: `200 OK`
+#### Viewing Your Files
+```http
+GET /api/files
+Authorization: Bearer your-auth-token
+```
+- List all your uploaded files
+- Shows file names, URLs, and types
+- Only shows your own files
 
-### Files
+#### Removing Files
+```http
+DELETE /api/files/receipt.pdf
+Authorization: Bearer your-auth-token
+```
+- Delete a specific file
+- Use the file name from upload response
+- Only owner can delete their files
 
-#### Upload File
-- **POST** `/api/files/upload`
-- **Auth**: Required
-- **Body**: `multipart/form-data`
-- **File Limits**: 
-  - Max size: 5MB
-  - Types: jpg, jpeg, png, webp, pdf, doc, docx, xls, xlsx, txt
-- **Response**: `200 OK`
+## 📁 File Management Guidelines
 
-#### List Files
-- **GET** `/api/files`
-- **Auth**: Required
-- **Response**: `200 OK`
+### File Types and Limits
+- **Images** 
+  - Formats: jpg, jpeg, png, webp
+  - Best for: User photos, receipts, screenshots
+  
+- **Documents** 
+  - Formats: pdf, doc, docx
+  - Best for: Reports, contracts, documentation
+  
+- **Spreadsheets** 
+  - Formats: xls, xlsx
+  - Best for: Data tables, financial records
+  
+- **Text Files** 
+  - Format: txt
+  - Best for: Simple text content, logs
 
-#### Delete File
-- **DELETE** `/api/files/:fileName`
-- **Auth**: Required
-- **Response**: `200 OK`
-
-## 📁 File Management
-
-### Supported File Types
-- **Images**: jpg, jpeg, png, webp
-- **Documents**: pdf, doc, docx
-- **Spreadsheets**: xls, xlsx
-- **Text**: txt
-
-### File Upload Rules
-- Maximum file size: 5MB
-- Rate limit: 10 uploads per 15 minutes per user
-- Auto-cleanup: Files older than 30 days
-- Secure file validation
+### Important File Rules
+- **Size Limit**: Keep files under 5MB
+- **Upload Frequency**: Maximum 10 uploads every 15 minutes
+- **Storage Duration**: Files are automatically deleted after 30 days
+- **Security**: All files are scanned for viruses and validated
 
 ## 🔒 Security Features
 
